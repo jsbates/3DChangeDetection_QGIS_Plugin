@@ -447,6 +447,8 @@ class Change:
         layer.triggerRepaint()
 
     def Error_map_old(self):
+    """Creates tempory files for outputs and runs QGIS core algorithms for ruggedness and slope.
+        Uses ruggedness and slope to highlight pixel variability in old DEM input"""
 
         input = self.olddem
 
@@ -468,12 +470,10 @@ class Change:
                        )
         final_output = QgsRasterLayer(slope_output, "old error map")
 
-        QgsProject.instance().addMapLayer(final_output)
-
-        # output = 'C:/OSGeo4W64/apps/qgis/python/plugins/outputs/test.tif' ALSO the input and output file needs to be changed
-
+        return final_output
 
     def Error_map_new(self):
+      """Uses ruggedness and slope to highlight pixel variability in new DEM input"""
 
         input = self.newdem
 
@@ -495,7 +495,64 @@ class Change:
                        )
         final_output = QgsRasterLayer(slope_output, "new error map")
 
-        QgsProject.instance().addMapLayer(final_output)
+        return final_output
+        
+
+        def old_error(self, input_raster):
+        """Quantifies the locations that are most likely errors in the old dem input using the raster calculator"""
+
+        raster = input_raster
+        if not raster.isValid():
+            print("Layer failed to load!")
+
+        entry = QgsRasterCalculatorEntry()
+        entry.raster = raster
+        entry.bandNumber = 1
+        entry.ref = 'old@1'
+
+        entries = [entry]
+
+        e = raster.extent()
+        w = raster.width()
+        h = raster.height()
+
+        outRaster = QgsProcessingUtils.generateTempFilename('old_error.tif')
+
+        change = QgsRasterCalculator('%s = 0' % (entry.ref), outRaster, "GTiff", e, w, h,
+                                     entries)
+        change.processCalculation()
+
+        output = QgsRasterLayer(outRaster, "old input error")
+
+        QgsProject.instance().addMapLayer(output)
+
+    def new_error(self, input_raster):
+        """Quantifies the locations that are most likely errors in the new dem input"""
+
+        raster = input_raster
+        if not raster.isValid():
+            print("Layer failed to load!")
+
+        entry = QgsRasterCalculatorEntry()
+        entry.raster = raster
+        entry.bandNumber = 1
+        entry.ref = 'new@1'
+
+        entries = [entry]
+
+        e = raster.extent()
+        w = raster.width()
+        h = raster.height()
+
+        outRaster = QgsProcessingUtils.generateTempFilename('new_error.tif')
+
+        change = QgsRasterCalculator('%s = 0' % (entry.ref), outRaster, "GTiff", e, w, h,
+                                     entries)
+        change.processCalculation()
+
+        output = QgsRasterLayer(outRaster, "new input error")
+
+        QgsProject.instance().addMapLayer(output)
 
 
     def unload(self):
@@ -518,12 +575,13 @@ class Change:
         result = self.dlg.exec_()
         # See if OK was pressed
         if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
+            
             self.setVariable()
             self.rasterCalculation(self.clip_oldDEM(), self.clip_newDEM())
             self.addLayers()
             self.colorRamp()
-            # self.Error_map_old()
-            # self.Error_map_new()
+            self.Error_map_old()
+            self.Error_map_new()
+            self.old_error(self.Error_map_old())
+            self.new_error(self.Error_map_new())
 
