@@ -218,7 +218,7 @@ class Change:
         """Load vectors for QGIS table of contents"""
         self.dlg.structure_list.clear()
         layers = [layer for layer in QgsProject.instance().mapLayers().values()]
-        vector_layers = ["None"]
+        vector_layers = [None]
         for layer in layers:
             if layer.type() == QgsMapLayer.VectorLayer:
                 vector_layers.append(layer.name())
@@ -294,14 +294,17 @@ class Change:
         self.inVector = self.getVectorLayer()
 
     def clip_oldDEM(self):
-
+        """Clips the study area in the old DEM from user shapefile using the native cliprasterbymasklayer algorithm"""
         old_input = self.olddem
 
-        mask_layer = self.inVector
+        if self.inVector == None:
+            return self.olddem
+        else:
+            mask_layer = self.inVector
 
-        old_clip = QgsProcessingUtils.generateTempFilename('old_clip.tif')
+            old_clip = QgsProcessingUtils.generateTempFilename('old_clip.tif')
 
-        processing.run("gdal:cliprasterbymasklayer",
+            processing.run("gdal:cliprasterbymasklayer",
                        {'INPUT': old_input,
                         'MASK': mask_layer,
                         'NODATA': -9999,
@@ -311,22 +314,26 @@ class Change:
                         'OUTPUT': old_clip}
                        )
 
-        output = QgsRasterLayer(old_clip, "Old Data Clipped")
+            output = QgsRasterLayer(old_clip, "Old Data Clipped")
 
-        #QgsMapLayerRegistry.instance().addMapLayer(output)
+            #QgsMapLayerRegistry.instance().addMapLayer(output)
 
-        return output
+            return output
 
 
     def clip_newDEM(self):
-
+        """Clips the study area in the new DEM from user shapefile using the native cliprasterbymasklayer algorithm"""
         old_input = self.newdem
 
-        mask_layer = self.inVector
+        """If shapefile entry is left blank the original input DEM is returned"""
+        if self.inVector == None:
+            return self.newdem
+        else:
+            mask_layer = self.inVector
 
-        new_clip = QgsProcessingUtils.generateTempFilename('new_clip.tif')
+            new_clip = QgsProcessingUtils.generateTempFilename('new_clip.tif')
 
-        processing.run("gdal:cliprasterbymasklayer",
+            processing.run("gdal:cliprasterbymasklayer",
                        {'INPUT': old_input,
                         'MASK': mask_layer,
                         'NODATA': -9999,
@@ -335,13 +342,13 @@ class Change:
                         'KEEP_RESOLUTION': False,
                         'OUTPUT': new_clip}
                        )
-        output = QgsRasterLayer(new_clip, "New Data Clipped")
+            output = QgsRasterLayer(new_clip, "New Data Clipped")
 
-        QgsProject.instance().addMapLayer(output)
+            QgsProject.instance().addMapLayer(output)
 
-        #QgsMapLayerRegistry.instance().addMapLayer(output)
+            #QgsMapLayerRegistry.instance().addMapLayer(output)
 
-        return output
+            return output
 
     def rasterCalculation(self, old_clip, new_clip):
 
