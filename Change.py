@@ -524,7 +524,9 @@ class Change:
 
         output = QgsRasterLayer(outRaster, "old input error")
 
-        QgsProject.instance().addMapLayer(output)
+        #QgsProject.instance().addMapLayer(output)
+
+        return output
 
     def new_error(self, input_raster):
         """Quantifies the locations that are most likely errors in the new dem input"""
@@ -552,7 +554,59 @@ class Change:
 
         output = QgsRasterLayer(outRaster, "new input error")
 
-        QgsProject.instance().addMapLayer(output)
+        #QgsProject.instance().addMapLayer(output)
+
+        return output
+
+        def old_error_color(self, old_error):
+        """setting symbology for old error map"""
+
+        layer = old_error
+
+        lst = []
+        qri = QgsColorRampShader.ColorRampItem
+        lst.append(qri(0, QColor(247, 247, 247, 0)))
+        lst.append(qri(1, QColor(167, 0, 252, 255), 'Old DEM Input Errors'))
+
+        myRasterShader = QgsRasterShader()
+        myColorRamp = QgsColorRampShader()
+
+        myColorRamp.setColorRampItemList(lst)
+        myColorRamp.setColorRampType(QgsColorRampShader.Interpolated)
+        myRasterShader.setRasterShaderFunction(myColorRamp)
+
+        myPseudoRenderer = QgsSingleBandPseudoColorRenderer(layer.dataProvider(), layer.type(), myRasterShader)
+
+        layer.setRenderer(myPseudoRenderer)
+
+        layer.triggerRepaint()
+
+        QgsProject.instance().addMapLayer(layer)
+
+    def new_error_color(self, new_error):
+        """setting symbology for new error map"""
+
+        layer = new_error
+
+        lst = []
+        qri = QgsColorRampShader.ColorRampItem
+        lst.append(qri(0, QColor(247, 247, 247, 0)))
+        lst.append(qri(1, QColor(167, 0, 252, 255), 'New DEM Input Errors'))
+
+        myRasterShader = QgsRasterShader()
+        myColorRamp = QgsColorRampShader()
+
+        myColorRamp.setColorRampItemList(lst)
+        myColorRamp.setColorRampType(QgsColorRampShader.Interpolated)
+        myRasterShader.setRasterShaderFunction(myColorRamp)
+
+        myPseudoRenderer = QgsSingleBandPseudoColorRenderer(layer.dataProvider(), layer.type(), myRasterShader)
+
+        layer.setRenderer(myPseudoRenderer)
+
+        layer.triggerRepaint()
+
+        QgsProject.instance().addMapLayer(layer)
 
 
     def unload(self):
@@ -575,13 +629,10 @@ class Change:
         result = self.dlg.exec_()
         # See if OK was pressed
         if result:
-            
             self.setVariable()
             self.rasterCalculation(self.clip_oldDEM(), self.clip_newDEM())
+            self.old_error_color(self.old_error(self.Error_map_old()))
+            self.new_error_color(self.new_error(self.Error_map_new()))
             self.addLayers()
             self.colorRamp()
-            self.Error_map_old()
-            self.Error_map_new()
-            self.old_error(self.Error_map_old())
-            self.new_error(self.Error_map_new())
 
