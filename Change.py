@@ -588,6 +588,62 @@ class Change:
 
         return output
 
+            def clip_old_error(self, old_error):
+
+        error_input = old_error
+
+        """If shapefile entry is left blank the original input DEM is returned"""
+        if self.inVector == None:
+            return old_error
+        else:
+            mask_layer = self.inVector
+
+            clipped_error = QgsProcessingUtils.generateTempFilename('old_error.tif')
+
+            processing.run("gdal:cliprasterbymasklayer",
+                           {'INPUT': error_input,
+                            'MASK': mask_layer,
+                            'NODATA': -9999,
+                            'ALPHA_BAND': False,
+                            'CROP_TO_CUTLINE': False,
+                            'KEEP_RESOLUTION': False,
+                            'OUTPUT': clipped_error}
+                           )
+
+            clipped_output = QgsRasterLayer(clipped_error, "Old DEM Error")
+
+            # QgsProject.instance().addMapLayer(clipped_output)
+
+            return clipped_output
+
+    def clip_new_error(self, new_error):
+
+        error_input = new_error
+
+        """If shapefile entry is left blank the original input DEM is returned"""
+        if self.inVector == None:
+            return new_error
+        else:
+            mask_layer = self.inVector
+
+            clipped_error = QgsProcessingUtils.generateTempFilename('new_error.tif')
+
+            processing.run("gdal:cliprasterbymasklayer",
+                           {'INPUT': error_input,
+                            'MASK': mask_layer,
+                            'NODATA': -9999,
+                            'ALPHA_BAND': False,
+                            'CROP_TO_CUTLINE': False,
+                            'KEEP_RESOLUTION': False,
+                            'OUTPUT': clipped_error}
+                           )
+
+            clipped_output = QgsRasterLayer(clipped_error, "New DEM Error")
+
+            # QgsProject.instance().addMapLayer(clipped_output)
+
+            return clipped_output
+
         def old_error_color(self, old_error):
         """setting symbology for old error map"""
 
@@ -662,8 +718,8 @@ class Change:
             self.setVariable()
             self.rasterCalculation(self.clip_oldDEM(), self.clip_newDEM()
             self.hillshade_newdem(self.clip_newDEM())
-            self.old_error_color(self.old_error(self.Error_map_old()))
-            self.new_error_color(self.new_error(self.Error_map_new()))
+            self.old_error_color(self.clip_old_error(self.old_error(self.Error_map_old())))
+            self.new_error_color(self.clip_new_error(self.new_error(self.Error_map_new())))
             self.addLayers()
             self.colorRamp()
 
