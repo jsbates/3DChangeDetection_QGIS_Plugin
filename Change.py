@@ -350,7 +350,7 @@ class Change:
 
             return output
 
-     def hillshade_newdem(self, demInput):
+    def hillshade_newdem(self, demInput):
         """Applies hillshade affect to the new DEM input and clipped output depending on shapefile selection. Native hillshade algorithm used."""
         input = demInput
 
