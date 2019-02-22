@@ -344,11 +344,34 @@ class Change:
                        )
             output = QgsRasterLayer(new_clip, "New Data Clipped")
 
-            QgsProject.instance().addMapLayer(output)
+            #QgsProject.instance().addMapLayer(output)
 
             #QgsMapLayerRegistry.instance().addMapLayer(output)
 
             return output
+
+     def hillshade_newdem(self, demInput):
+        """Applies hillshade affect to the new DEM input and clipped output depending on shapefile selection. Native hillshade algorithm used."""
+        input = demInput
+
+        hillshade_output = QgsProcessingUtils.generateTempFilename('clip_hillshade.tif')
+
+        processing.run("gdal:hillshade",
+                       {'INPUT': input,
+                        'BAND': 1,
+                        'Z_FACTOR': 1.0,
+                        'SCALE': 1.0,
+                        'AZIMUTH': 315,
+                        'ALTITUDE': 45,
+                        'COMPUTE_EDGES': False,
+                        'ZEVENBERGEN': False,
+                        'COMBINED': False,
+                        'MULTIDIRECTIONAL': False,
+                        'OUTPUT': hillshade_output}
+                       )
+        output = QgsRasterLayer(hillshade_output, "New Data Clipped")
+
+        QgsProject.instance().addMapLayer(output)
 
     def rasterCalculation(self, old_clip, new_clip):
 
@@ -637,7 +660,8 @@ class Change:
         # See if OK was pressed
         if result:
             self.setVariable()
-            self.rasterCalculation(self.clip_oldDEM(), self.clip_newDEM())
+            self.rasterCalculation(self.clip_oldDEM(), self.clip_newDEM()
+            self.hillshade_newdem(self.clip_newDEM())
             self.old_error_color(self.old_error(self.Error_map_old()))
             self.new_error_color(self.new_error(self.Error_map_new()))
             self.addLayers()
